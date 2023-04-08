@@ -1,7 +1,7 @@
 
 //initial game settings
 let beginningseedlings = 5;
-let beginningtreeChange = .30 //chance of tree spawning at beginning of game
+let beginningtreeChange = 30 //chance of tree spawning at beginning of game
 
 
 
@@ -10,7 +10,7 @@ let app;
 //User Variables
 let remainingSeedlings = beginningseedlings;
 let timeskipcooldown = false;
-let year;
+let year = 3;
 const width = 1920;
 const height = 1080;
 //Grass Tiling Settings
@@ -32,29 +32,20 @@ window.onload = function() {
     let xGrassTile = Math.ceil(app.view.width/grasswidth);
     let yGrassTile = Math.ceil(app.view.width/grasswidth);
 
+    let tiles = [];
+ 
     for (let i=0;i<xGrassTile;i++) {
         for(let j=0;j<yGrassTile;j++) {
-            let grassTexture = PIXI.Texture.from("img/grasstile.png");
-            let grasstile = new PIXI.Sprite(grassTexture);
-            grasstile.width = grasswidth;
-            grasstile.height = grasstile.width
-            grasstile.x = 45*i;
-            grasstile.y = 45*j;
-            grasstile.eventMode = 'dynamic';
-            grasstile.buttonMode = true;
-            app.stage.addChild(grasstile);
+            tiles.push(new Tile(app, i, j))
 
-
-            grasstile.on('pointerenter', event=>{
-                grasstile.tint = 0xD6D7DA
-            })
-
-            grasstile.on('pointerleave', event=>{
-                grasstile.tint = 0xFFFFFF
-            })
+            //first initialization
+        
         }
     }
-
+    year+=1;
+    for (let i=0;i<tiles.length;i++) {
+        tiles[i].grow();
+    }
 
 
     //Remaining Seedling Counter
@@ -78,7 +69,12 @@ window.onload = function() {
     seedCounter.x = 75;
     seedCounter.y = app.view.height- 45
 
-    
+    //Year Label
+    var yearLabel = new PIXI.Text("Year:", {fontFamily: "Press Start 2P", fill:"white", fontSize: '13px'});
+    app.stage.addChild(yearLabel);
+    yearLabel.x = 16;
+    yearLabel.y = app.view.height - 900;
+    let yearTexture = PIXI.Texture.from("img/yearTexture.png");
 
     //time skip
     var timeSkipLabel = new PIXI.Text("Fast Forward", {fontFamily: "Press Start 2P", fill:"white", fontSize: '13px'});
@@ -116,7 +112,12 @@ window.onload = function() {
     tsb.on('pointerup', event=>{
         tsb.texture = timeskiphighlight;
         year += 1;
+        for (let i=0;i<tiles.length;i++) {
+            tiles[i].grow();
+        }
     })
+
+    
 
 
     //frame
@@ -124,6 +125,8 @@ window.onload = function() {
     ticker.stop();
     ticker.add((deltaTime) => {
         seedCounter.text = remainingSeedlings;
+      
+       
     });
     ticker.start();
 
@@ -138,10 +141,35 @@ class Tile {
         this.y = y // the Y tile on the screen
         this.state = 0
         
+        this.grassTexture = PIXI.Texture.from("img/grasstile.png");
+        this.grasstile = new PIXI.Sprite(this.grassTexture);
+        this.grasstile.width = grasswidth;
+        this.grasstile.height = this.grasstile.width
+        this.grasstile.x = 45 * x;
+        this.grasstile.y = 45 * y;
+        this.grasstile.eventMode = 'dynamic';
+        this.grasstile.buttonMode = true;
+        app.stage.addChild(this.grasstile);
+
+    
+
+        this.grasstile.on('pointerenter', event=>{
+            this.grasstile.tint = 0xD6D7DA
+        })
+
+        this.grasstile.on('pointerleave', event=>{
+            this.grasstile.tint = 0xFFFFFF
+        })
+
+        if (Math.floor(Math.random()*100) <= 30) {
+            this.plant();
+            this.treebirthyear = Math.ceil(Math.random()*3) 
+        }
         
+
     }
 
-    plant(year) {
+    plant() {
         // initialize tree sprites
         this.saplingTexture = PIXI.Texture.from("img/Sapling.png")
         this.grownTexture = PIXI.Texture.from("img/Tree.png")
@@ -149,7 +177,7 @@ class Tile {
 
         // initialize tree
         this.tree = new PIXI.Sprite(this.saplingTexture);
-        app.stage.addChild(this.tree);
+        this.app.stage.addChild(this.tree);
         this.tree.eventMode = 'dynamic';
         this.tree.buttonMode = true;
         this.tree.width = grasswidth;
@@ -157,16 +185,14 @@ class Tile {
         this.tree.x = this.x * grasswidth
         this.tree.y = this.y * grasswidth
         this.tree.defaultCursor = 'pointer'
-
-        this.birthyear = year // the year of planting
-        this.sprite.texture = this.saplingTexture
+        this.treebirthyear = year;
     }
 
     grow() {
         if (this.state != 0) return false;
-        if (year - this.birthyear >= 3) {
+        if (year - this.treebirthyear >= 3) {
             this.state = 1
-            this.sprite.texture = this.grownTexture
+            this.tree.texture = this.grownTexture
         }
         
         

@@ -23,3 +23,13 @@
     from, to { border-color: transparent }
     50% { border-color: orange; }
 }
+
+a {
+    color: white;
+    text-decoration: none;
+    padding: 5px;
+}
+
+a:hover {
+    background: rgb(111, 164, 85);
+}

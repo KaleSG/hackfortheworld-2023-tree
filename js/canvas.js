@@ -115,48 +115,65 @@ window.onload = function() {
 
     tsb.on('pointerup', event=>{
         tsb.texture = timeskiphighlight;
+        year += 1;
     })
 
+
+    //frame
     const ticker = new PIXI.Ticker();
     ticker.stop();
     ticker.add((deltaTime) => {
-      console.log("what")
+        seedCounter.text = remainingSeedlings;
     });
     ticker.start();
-
 
 
 } 
 
 
-class Tree {
+class Tile {
     constructor(app, x, y) {
         this.app = app
         this.x = x // the X tile on the screen
         this.y = y // the Y tile on the screen
-        this.state = true
+        this.state = 0
+        
+        
+    }
 
-        // initialize sprite
-        this.normalTexture = PIXI.Texture.from("img/Tree.png")
+    plant(year) {
+        // initialize tree sprites
+        this.saplingTexture = PIXI.Texture.from("img/Sapling.png")
+        this.grownTexture = PIXI.Texture.from("img/Tree.png")
         this.cutTexture = PIXI.Texture.from("img/Stump.png")
-        this.sprite = new PIXI.Sprite(timeskipbuttonTexture);
-        app.stage.addChild(tsb);
-        this.sprite.eventMode = 'dynamic';
-        this.sprite.buttonMode = true;
-        this.sprite.width = grasswidth;
-        this.sprite.height = grasswidth
-        this.sprite.x = x * grasswidth
-        this.sprite.y = y * grasswidth
-        this.sprite.defaultCursor = 'pointer'
 
-        tsb.on('pointerenter', event=>{
-            this.sprite.texture = this.cutTexture
-        })
+        // initialize tree
+        this.tree = new PIXI.Sprite(this.saplingTexture);
+        app.stage.addChild(this.tree);
+        this.tree.eventMode = 'dynamic';
+        this.tree.buttonMode = true;
+        this.tree.width = grasswidth;
+        this.tree.height = grasswidth
+        this.tree.x = this.x * grasswidth
+        this.tree.y = this.y * grasswidth
+        this.tree.defaultCursor = 'pointer'
+
+        this.birthyear = year // the year of planting
+        this.sprite.texture = this.saplingTexture
+    }
+
+    grow() {
+        if (this.state != 0) return false;
+        if (year - this.birthyear >= 3) {
+            this.state = 1
+            this.sprite.texture = this.grownTexture
+        }
+        
+        
     }
 
     cut() {
-        this.state = false
-        // change sprite to cut
+        this.state = 2
         this.sprite.texture = this.cutTexture
     }
 }

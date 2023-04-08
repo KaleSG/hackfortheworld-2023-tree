@@ -4,10 +4,13 @@ let beginningseedlings = 5;
 let beginningtreeChange = 5 //chance of tree spawning at beginning of game
 let maxtreeage = 10; //year age of max trees
 let treeautodissapearyear = 13;
-let startingquota = 20; //rate of trees that are deforested
+let startingquota = 5; //rate of trees that are deforested
+let timeElapsed = 0;
+let livingtrees = 0;
+let gameover = false;
 
 //Grass Tiling Settings
-let grasswidth = 50;
+let grasswidth = Math.floor(innerWidth/38);
 
 
 let app;
@@ -16,8 +19,9 @@ let app;
 let remainingSeedlings = beginningseedlings;
 let timeskipcooldown = false;
 let year = 3;
+let mousedown =false;
 
-let harvestabletrees = 0;
+
 let harvestabletreesArray = [];
 
 
@@ -28,6 +32,9 @@ let harvestabletreesArray = [];
 
 //textures
 let deadtreetexture = PIXI.Texture.from("img/DeadTree.png")
+let deforesterTexture = PIXI.Texture.from("img/evildude.png")
+
+
 
 window.onload = function() {
     app = new PIXI.Application(
@@ -87,13 +94,14 @@ window.onload = function() {
     let yearTexture = PIXI.Texture.from("img/yearTexture.png");
     let yearimg = new PIXI.Sprite(yearTexture);
     yearimg.x = 16;
-    yearimg.y = app.view.height - 890;
+    yearimg.y = 15;
     yearimg.width = 300;
     yearimg.height = 80;
-    app.stage.addChild(yearimg) 
-    var yearLabel = new PIXI.Text("Year: " + year.toString(), {fontFamily: "Press Start 2P", fill:"white", fontSize: '20px'});
+    app.stage.addChild(yearimg);
+    displayYear = year;
+    var yearLabel = new PIXI.Text("Year: " + displayYear.toString(), {fontFamily: "Press Start 2P", fill:"white", fontSize: '20px'});
     yearLabel.x = 40;
-    yearLabel.y = app.view.height - 860;
+    yearLabel.y = 45;
     app.stage.addChild(yearLabel);
 
     //time skip
@@ -130,16 +138,79 @@ window.onload = function() {
     })
 
     tsb.on('pointerup', event=>{
+     if (timeskipcooldown || gameover) return false;
+        timeskipcooldown = true;
+        setTimeout(() => { 
+            timeskipcooldown = false;
+        }, 1000);
         tsb.texture = timeskiphighlight;
        
+
+        //end game condition
+        if (livingtrees<=0 && remainingSeedlings<=0) {
+            gameover = true;
+
+
+            for (let i=0;i<tiles.length;i++) {
+                if (tiles[i].tree != null) {
+                    tiles[i].tree.visible = false;
+                }
+            }
+
+            //End Message 
+            let endmessageTexture = PIXI.Texture.from("img/endgame.png");
+            let endgameMessage = new PIXI.Sprite(endmessageTexture);
+            endgameMessage.anchor.set(.5);
+            endgameMessage.x = app.view.width /2;
+            endgameMessage.y = app.view.height/2;
+            app.stage.addChild(endgameMessage);
+
+
+
+        }
+
+
+
         //deforest setup
-        let quotaMultiplier = year - 3;
-        console.log(harvestabletreesArray)
+        let quotaMultiplier = year - 4;
+        let quota = startingquota * Math.ceil(1.01 * quotaMultiplier);
+       
+       
+
+      
+        while (harvestabletreesArray.length> 0 && quota >0) {
+            quota -= 1;
+            let randomindex = Math.floor(Math.random() * harvestabletreesArray.length);
+            let selectedTree = harvestabletreesArray[randomindex];
+      
+            let deforester = new PIXI.Sprite(deforesterTexture);
+            deforester.x = selectedTree.grasstile.x+8;
+            deforester.y = selectedTree.grasstile.y;
+            deforester.width = 40;
+            deforester.height = 40;
+            app.stage.addChild(deforester);
+         
+        
+            setTimeout(() => { 
+                deforester.visible = false;
+            app.stage.removeChild(deforester);
+            deforester = null;
+            selectedTree.cut();
+            }, 800);
+
+            
+
+            
+            
+        
+        }
+
+
 
 
         for (let i=0;i<tiles.length;i++) {
             if (tiles[i].state == 2) {
-                if (Math.floor(Math.random()*100) < 5) {
+                if (Math.floor(Math.random()*100) < 8) {
                     remainingSeedlings+=1
                 }
             }
@@ -150,12 +221,7 @@ window.onload = function() {
             tiles[i].grow();
            
         }
-
-
-
-
-
-
+        
 
     })
 
@@ -167,16 +233,17 @@ window.onload = function() {
     ticker.stop();
     ticker.add((deltaTime) => {
         seedCounter.text = remainingSeedlings;
-        yearLabel.text = "Year: " + year;
+        yearLabel.text = "Year: " + (year + 2019);
 
-
-      
+       
       
       
        
     });
     ticker.start();
 
+
+//mouse up handler
 
 } 
 
@@ -218,16 +285,25 @@ class Tile {
             this.grasstile.tint = 0xD6D7DA
         })
 
-        this.grasstile.on('pointerup', event=>{
-            if (remainingSeedlings <=0 || this.state !=0) return false;
-            this.plant();
-            this.grasstile.tint = 0xFFFFFF;
-            remainingSeedlings--;
+        this.grasstile.on('pointerdown', event=>{
+            mousedown = true;
 
         })
 
+        this.grasstile.on('pointerup', event=>{
+            mousedown = false;
+
+        })
+
+
         this.grasstile.on('pointerleave', event=>{
             this.grasstile.tint = 0xFFFFFF
+            if (mousedown) {
+                if (remainingSeedlings <=0 || this.state !=0) return false;
+            this.plant();
+            this.grasstile.tint = 0xFFFFFF;
+            remainingSeedlings--;
+            }
         })
 
         if (Math.floor(Math.random()*100) <= 30) {
@@ -259,6 +335,9 @@ class Tile {
         this.tree.defaultCursor = 'pointer'
         this.treebirthyear = year;
         this.state = 1;
+        livingtrees++;
+
+      
     }
 
     grow() {
@@ -267,8 +346,9 @@ class Tile {
             this.tree.texture = this.grownTexture
             this.state = 2;
             this.harvestable = true;
-            harvestabletrees++;
+            
             harvestabletreesArray.push(this);
+        
         }}else if (this.state == 2) {
             //handles tree death
             if (year-this.treebirthyear >= maxtreeage) {
@@ -276,9 +356,11 @@ class Tile {
                 this.isalive =  false;
                 this.tree.texture = deadtreetexture;
                 this.harvestable = false;
-                harvestabletrees--
+                livingtrees--
+              
+                
 
-                harvestabletreesArray.splice(harvestabletreesArray.indexOf(this));
+                harvestabletreesArray.splice(harvestabletreesArray.indexOf(this),1);
             }
         }else if(this.state ==3 || this.state == 4) {
             if (year-this.treebirthyear>= treeautodissapearyear) {
@@ -287,6 +369,7 @@ class Tile {
                 this.tree = null;
                 this.harvestable = false;
                 this.state = 0;
+               
             }
         }
 
@@ -297,10 +380,14 @@ class Tile {
 
     cut() {
        
-        this.sprite.texture = this.cutTexture
+        this.tree.texture = this.cutTexture
         this.state = 4;
         this.hastree = false;
         this.isalive = false;
         this.harvestable = false;
+        harvestabletreesArray.splice(harvestabletreesArray.indexOf(this),1);
+        livingtrees--
+              
+        
     }
 }

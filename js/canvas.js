@@ -66,15 +66,23 @@ window.onload = function() {
     //Seedling Remaining label
     var seedCounter = new PIXI.Text(remainingSeedlings.toString(), {fontFamily: "Press Start 2P", fill:"white", fontSize: '18px'});
     app.stage.addChild(seedCounter);
-    seedCounter.x = 75;
-    seedCounter.y = app.view.height- 45
+    seedCounter.anchor.set(.5)
+    seedCounter.x = 60;
+    seedCounter.y = app.view.height- 10
 
     //Year Label
-    var yearLabel = new PIXI.Text("Year:", {fontFamily: "Press Start 2P", fill:"white", fontSize: '13px'});
-    app.stage.addChild(yearLabel);
-    yearLabel.x = 16;
-    yearLabel.y = app.view.height - 900;
     let yearTexture = PIXI.Texture.from("img/yearTexture.png");
+    let yearimg = new PIXI.Sprite(yearTexture);
+    yearimg.x = 16;
+    yearimg.y = app.view.height - 890;
+    yearimg.width = 300;
+    yearimg.height = 80;
+    app.stage.addChild(yearimg) 
+    var yearLabel = new PIXI.Text("Year: " + year.toString(), {fontFamily: "Press Start 2P", fill:"white", fontSize: '20px'});
+    yearLabel.x = 40;
+    yearLabel.y = app.view.height - 860;
+    app.stage.addChild(yearLabel);
+
 
     //time skip
     var timeSkipLabel = new PIXI.Text("Fast Forward", {fontFamily: "Press Start 2P", fill:"white", fontSize: '13px'});
@@ -111,9 +119,20 @@ window.onload = function() {
 
     tsb.on('pointerup', event=>{
         tsb.texture = timeskiphighlight;
+       
+
+        for (let i=0;i<tiles.length;i++) {
+            if (year-tiles[i].treebirthyear >= 3) {
+                if (Math.floor(Math.random()*100) < 5) {
+                    remainingSeedlings+=1
+                }
+            }
+        }
         year += 1;
+
         for (let i=0;i<tiles.length;i++) {
             tiles[i].grow();
+           
         }
     })
 
@@ -125,6 +144,7 @@ window.onload = function() {
     ticker.stop();
     ticker.add((deltaTime) => {
         seedCounter.text = remainingSeedlings;
+        yearLabel.text = "Year: " + year;
       
        
     });
@@ -150,11 +170,22 @@ class Tile {
         this.grasstile.eventMode = 'dynamic';
         this.grasstile.buttonMode = true;
         app.stage.addChild(this.grasstile);
+        this.hastree = false;
+        this.isalive = false;
+        this.harvestable = false;
 
     
 
         this.grasstile.on('pointerenter', event=>{
             this.grasstile.tint = 0xD6D7DA
+        })
+
+        this.grasstile.on('pointerup', event=>{
+            if (remainingSeedlings <=0) return false;
+            this.plant();
+            this.grasstile.tint = 0xFFFFFF;
+            remainingSeedlings--;
+
         })
 
         this.grasstile.on('pointerleave', event=>{
@@ -163,6 +194,9 @@ class Tile {
 
         if (Math.floor(Math.random()*100) <= 30) {
             this.plant();
+            this.hastree = true;
+            this.isalive = false;
+            this.harvestable = true;
             this.treebirthyear = Math.ceil(Math.random()*3) 
         }
         
@@ -201,5 +235,8 @@ class Tile {
     cut() {
         this.state = 2
         this.sprite.texture = this.cutTexture
+        this.hastree = false;
+        this.isalive = false;
+        this.harvestable = false;
     }
 }
